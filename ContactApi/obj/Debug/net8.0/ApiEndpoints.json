@@ -1,0 +1,28 @@
+[
+  {
+    "ContainingType": "ContactApi.Controllers.ContactController",
+    "Method": "GetMessages",
+    "RelativePath": "api/Contact",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ContactApi.Controllers.ContactController",
+    "Method": "SendContact",
+    "RelativePath": "api/Contact/send",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "formDto",
+        "Type": "ContactApi.Models.ContactFormDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  }
+]
