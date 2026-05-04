@@ -1,4 +1,6 @@
-﻿using System.Net;
+﻿using SendGrid;
+using SendGrid.Helpers.Mail;
+using System.Net;
 using System.Net.Mail;
 
 namespace ContactApi.Services;
@@ -14,41 +16,16 @@ public class EmailService
 
     public async Task SendContactNotificationAsync(string name, string email, string subject, string message)
     {
-        // Read values
-        var smtpServer = _configuration["EmailSettings:SmtpServer"];
-        var smtpPort = _configuration["EmailSettings:SmtpPort"];
-        var senderEmail = _configuration["EmailSettings:SenderEmail"];
-        var senderPassword = _configuration["EmailSettings:SenderPassword"];
+        var apiKey = _configuration["EmailSettings:SendGridApiKey"];
         var receiverEmail = _configuration["EmailSettings:ReceiverEmail"];
+        var senderEmail = _configuration["EmailSettings:SenderEmail"];
 
-        // DEBUG: Print EVERYTHING
-        Console.WriteLine("========== EMAIL DEBUG INFO ==========");
-        Console.WriteLine($"SmtpServer: '{smtpServer}'");
-        Console.WriteLine($"SmtpPort: '{smtpPort}'");
-        Console.WriteLine($"SenderEmail: '{senderEmail}'");
-        Console.WriteLine($"SenderPassword: '{senderPassword?.Substring(0, Math.Min(4, senderPassword?.Length ?? 0))}...' (length: {senderPassword?.Length ?? 0})");
-        Console.WriteLine($"ReceiverEmail: '{receiverEmail}'");
-        Console.WriteLine("=======================================");
-
-        // Check for nulls
-        if (string.IsNullOrEmpty(senderEmail))
+        var client = new SendGridClient(apiKey);
+        var msg = new SendGridMessage()
         {
-            throw new Exception("SenderEmail is empty! Check appsettings.json");
-        }
-        if (string.IsNullOrEmpty(receiverEmail))
-        {
-            throw new Exception("ReceiverEmail is empty! Check appsettings.json");
-        }
-        if (string.IsNullOrEmpty(senderPassword))
-        {
-            throw new Exception("SenderPassword is empty! Did you set the App Password?");
-        }
-
-        var mailMessage = new MailMessage
-        {
-            From = new MailAddress(senderEmail),
+            From = new EmailAddress(senderEmail, "Portfolio Contact"),
             Subject = $"Portfolio Contact: {subject}",
-            Body = $@"
+            HtmlContent = $@"
                 <h2>New Contact Form Submission</h2>
                 <p><strong>Name:</strong> {name}</p>
                 <p><strong>Email:</strong> {email}</p>
@@ -57,19 +34,15 @@ public class EmailService
                 <p>{message}</p>
                 <hr/>
                 <p><small>Sent from your portfolio website</small></p>
-            ",
-            IsBodyHtml = true
+            "
         };
+        msg.AddTo(new EmailAddress(receiverEmail));
 
-        mailMessage.To.Add(receiverEmail);
+        var response = await client.SendEmailAsync(msg);
 
-        using var smtpClient = new SmtpClient(smtpServer, int.Parse(smtpPort ?? "587"))
+        if (!response.IsSuccessStatusCode)
         {
-            Credentials = new NetworkCredential(senderEmail, senderPassword),
-            EnableSsl = true
-        };
-
-        await smtpClient.SendMailAsync(mailMessage);
-        Console.WriteLine("✅ Email sent successfully!");
+            throw new Exception($"SendGrid error: {response.StatusCode}");
+        }
     }
 }
